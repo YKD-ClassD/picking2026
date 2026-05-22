@@ -795,9 +795,19 @@ async function syncAll() {
     if(!data)return;
     _cache.stickers=buildStickerMap(data.stickers||[]);
     _cache.picks=buildPickMap(data.picks||[]);
-    // 로컬에서 새로 추가한 항목 보존하며 병합
+    // logs: 서버 데이터 기준, 로컬에만 있는 항목 보존
     const serverLogs=buildLogMap(data.logs||[]);
-    _cache.logs=serverLogs;
+    const serverLogIds=new Set((data.logs||[]).map(l=>l.id));
+    const mergedLogs={...serverLogs};
+    // 로컬 캐시에만 있는 항목 추가
+    Object.entries(_cache.logs||{}).forEach(([key,entries])=>{
+      const localOnly=entries.filter(e=>e.id&&!serverLogIds.has(e.id));
+      if(localOnly.length){
+        if(!mergedLogs[key])mergedLogs[key]=[];
+        mergedLogs[key]=[...mergedLogs[key],...localOnly];
+      }
+    });
+    _cache.logs=mergedLogs;
     // froms: id 기반 병합
     const serverFromIds=new Set((data.froms||[]).map(f=>f.id));
     const serverFromsNorm=(data.froms||[]).map(normalizeFrom);
@@ -846,9 +856,11 @@ function buildLogMap(rows){
   rows.forEach(r=>{
     const key=r.name+'_'+r.date;
     if(!map[key])map[key]=[];
+    const parsedUrls=(()=>{try{return JSON.parse(r.fileUrls||'[]');}catch{return[];}})();
     map[key].push({
       id:r.id, text:r.text,
-      files:(()=>{try{return JSON.parse(r.fileUrls||'[]');}catch{return[];}})(),
+      files:parsedUrls.map(u=>u.name||u).filter(Boolean),
+      fileUrls:parsedUrls.map(u=>u.url||u).filter(Boolean),
       savedAt:r.savedAt?new Date(r.savedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'',
       updatedAt:r.updatedAt||''
     });
@@ -1345,14 +1357,19 @@ function handleLogFiles(e){
       });
       if(result&&result.viewUrl){
         logFiles[idx]={name:f.name,url:result.viewUrl,downloadUrl:result.downloadUrl,isImage:f.type.startsWith('image/')};
-        // 미리보기 URL로 교체
-        const wrap=document.getElementById(`file-wrap-log-${idx}`);
-        if(wrap&&f.type.startsWith('image/')){
+        // 미리보기 URL로 교체 (lh3 형식으로)
+        const fileId=(result.viewUrl.match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1];
+        const previewUrl=fileId?'https://lh3.googleusercontent.com/d/'+fileId:'';
+        const wrap=document.getElementById('file-wrap-log-'+idx);
+        if(wrap&&previewUrl){
           const img=wrap.querySelector('img');
-          if(img)img.src=result.viewUrl.replace('/view','=s400');
+          if(img){img.src=previewUrl;}
+          else{
+            const div=wrap.querySelector('div');
+            if(div){div.style.backgroundImage='url('+previewUrl+')';div.textContent='';}
+          }
         }
       } else {
-        // Drive 실패 시 로컬 유지
         logFiles[idx]={name:f.name,url:'',isImage:f.type.startsWith('image/')};
       }
     };
@@ -1396,7 +1413,7 @@ function saveLog(){
   const list=getLogList(currentUser,logDate);
   const now=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   const activeLogFiles=getActiveFiles(logFiles);
-  const fileNames=activeLogFiles.map(f=>typeof f==='object'&&f.name?f.name:f);
+  const fileNames=activeLogFiles.map(f=>typeof f==='object'&&f.name?f.name:(f||''));
   const fileUrls=activeLogFiles.map(f=>typeof f==='object'&&f.url?f.url:'');
   if(editId){
     const idx=list.findIndex(l=>l.id===editId);
@@ -1523,6 +1540,13 @@ function handleFromFiles(e){
       });
       if(result&&result.viewUrl){
         fromFiles[idx]={name:f.name,url:result.viewUrl,downloadUrl:result.downloadUrl,isImage:f.type.startsWith('image/')};
+        const fileId=(result.viewUrl.match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1];
+        const previewUrl=fileId?'https://lh3.googleusercontent.com/d/'+fileId:'';
+        const wrap=document.getElementById('file-wrap-from-'+idx);
+        if(wrap&&previewUrl){
+          const img=wrap.querySelector('img');
+          if(img){img.src=previewUrl;}
+        }
       } else {
         fromFiles[idx]={name:f.name,url:'',isImage:f.type.startsWith('image/')};
       }
@@ -1565,17 +1589,18 @@ function sendFrom(){
     });
     toast(`${fromTarget}님에게 메모를 전달했어요 💌`);
   }
-  saveFromMemos(memos);
-  const toName=fromTarget||memos.find(m=>m.id===editingFromId)?.to;
+  const toName=fromTarget||(_cache.froms||[]).find(m=>m.id===editingFromId)?.to;
   const now2=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   const newId=editingFromId||('from_'+Date.now());
   if(!editingFromId){
-    // 새 메모를 캐시에 바로 추가
-    const newMemo={id:newId,from:currentUser,to:toName,text,fileUrls:fromFileUrls||[],date:getActiveDate(),sentAt:now2,updatedAt:''};
+    // 캐시에만 추가 (중복 방지)
+    const newMemo={id:newId,from:currentUser,to:toName,text,
+      fileUrls:fromFileUrls||[],files:fileNames,
+      date:getActiveDate(),sentAt:now2,updatedAt:''};
     _cache.froms=[...(_cache.froms||[]),newMemo];
   } else {
     const idx2=(_cache.froms||[]).findIndex(m=>m.id===editingFromId);
-    if(idx2!==-1){_cache.froms[idx2]={..._cache.froms[idx2],text,fileUrls:fromFileUrls||[],updatedAt:now2};}
+    if(idx2!==-1){_cache.froms[idx2]={..._cache.froms[idx2],text,fileUrls:fromFileUrls||[],files:fileNames,updatedAt:now2};}
   }
   const fromEntry={from:currentUser,to:toName,text,fileUrls:fromFileUrls||[],date:getActiveDate(),id:editingFromId||newId};
   api('saveFrom',fromEntry);
@@ -1607,8 +1632,7 @@ function editFromMemo(id){
 
 function recallFromMemo(id){
   if(!confirm('이 메모를 회수할까요? 상대방 화면에서도 사라집니다.')){return;}
-  const memos=getFromMemos().filter(m=>!(m.id===id&&m.from===currentUser));
-  saveFromMemos(memos);
+  _cache.froms=(_cache.froms||[]).filter(m=>!(m.id===id&&m.from===currentUser));
   api('recallFrom',{id,from:currentUser});
   renderFromInbox();
   renderFromSent();
