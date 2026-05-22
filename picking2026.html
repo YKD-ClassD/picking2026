@@ -1315,10 +1315,29 @@ function handleLogFiles(e){
   const files=Array.from(e.target.files);
   files.forEach(f=>{
     const idx=logFiles.length;
-    logFiles.push(f);
+    logFiles.push(null); // 자리 확보
     const reader=new FileReader();
-    reader.onload=ev=>{
+    reader.onload=async ev=>{
+      const base64=ev.target.result.split(',')[1];
+      // 로컬 미리보기 먼저
       addFilePreview('log-preview',f,ev.target.result,idx,'log');
+      // Drive 업로드
+      const result=await api('uploadFile',{
+        fileType:'log',userName:currentUser,date:logDate,
+        fileName:f.name,mimeType:f.type,base64
+      });
+      if(result&&result.viewUrl){
+        logFiles[idx]={name:f.name,url:result.viewUrl,downloadUrl:result.downloadUrl,isImage:f.type.startsWith('image/')};
+        // 미리보기 URL로 교체
+        const wrap=document.getElementById(`file-wrap-log-${idx}`);
+        if(wrap&&f.type.startsWith('image/')){
+          const img=wrap.querySelector('img');
+          if(img)img.src=result.viewUrl.replace('/view','=s400');
+        }
+      } else {
+        // Drive 실패 시 로컬 유지
+        logFiles[idx]={name:f.name,url:'',isImage:f.type.startsWith('image/')};
+      }
     };
     reader.readAsDataURL(f);
   });
@@ -1360,19 +1379,20 @@ function saveLog(){
   const list=getLogList(currentUser,logDate);
   const now=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   const activeLogFiles=getActiveFiles(logFiles);
-  const fileNames=activeLogFiles.map(f=>f.name);
+  const fileNames=activeLogFiles.map(f=>typeof f==='object'&&f.name?f.name:f);
+  const fileUrls=activeLogFiles.map(f=>typeof f==='object'&&f.url?f.url:'');
   if(editId){
     const idx=list.findIndex(l=>l.id===editId);
-    if(idx!==-1){list[idx]={...list[idx],text,files:fileNames,updatedAt:now};}
+    if(idx!==-1){list[idx]={...list[idx],text,files:fileNames,fileUrls:fileUrls||[],updatedAt:now};}
     toast('기록이 수정됐어요 ✏️');
   } else {
     const id='log_'+Date.now();
-    list.push({id,text,files:fileNames,savedAt:now});
+    list.push({id,text,files:fileNames,fileUrls:fileUrls||[],savedAt:now});
     toast('기록이 추가됐어요 📓');
   }
   saveLogList(currentUser,logDate,list);
   // API 저장
-  const logEntry={name:currentUser,date:logDate,text,fileUrls:[],id:editId||undefined};
+  const logEntry={name:currentUser,date:logDate,text,fileUrls:fileUrls||[],id:editId||undefined};
   api('saveLog',logEntry);
   cancelLogEdit();
   renderSavedLogs();
@@ -1433,7 +1453,17 @@ function renderSavedLogs(){
         </div>
       </div>
       <div class="saved-log-text">${entry.text||'(텍스트 없음)'}</div>
-      ${entry.files?.length?`<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${entry.files.join(', ')}</div>`:''}`;
+      ${entry.fileUrls?.some(u=>u)?`
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.6rem;">
+          ${entry.fileUrls.map((url,i)=>url?`
+            <a href="${url}" target="_blank" style="display:inline-block;">
+              <img src="${url.includes('drive.google.com')?url.replace('/view','=s200'):url}"
+                style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <div style="display:none;width:72px;height:72px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);align-items:center;justify-content:center;font-size:1.5rem;">🎬</div>
+            </a>`:'').join('')}
+        </div>`
+      :entry.files?.length?`<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${entry.files.join(', ')}</div>`:''}`;
     container.appendChild(div);
   });
 }
@@ -1475,10 +1505,20 @@ function handleFromFiles(e){
   const files=Array.from(e.target.files);
   files.forEach(f=>{
     const idx=fromFiles.length;
-    fromFiles.push(f);
+    fromFiles.push(null);
     const reader=new FileReader();
-    reader.onload=ev=>{
+    reader.onload=async ev=>{
+      const base64=ev.target.result.split(',')[1];
       addFilePreview('from-preview',f,ev.target.result,idx,'from');
+      const result=await api('uploadFile',{
+        fileType:'from',userName:currentUser,date:getActiveDate(),
+        fileName:f.name,mimeType:f.type,base64
+      });
+      if(result&&result.viewUrl){
+        fromFiles[idx]={name:f.name,url:result.viewUrl,downloadUrl:result.downloadUrl,isImage:f.type.startsWith('image/')};
+      } else {
+        fromFiles[idx]={name:f.name,url:'',isImage:f.type.startsWith('image/')};
+      }
     };
     reader.readAsDataURL(f);
   });
@@ -1503,7 +1543,8 @@ function sendFrom(){
   const memos=getFromMemos();
   const now=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   const activeFromFiles=getActiveFiles(fromFiles);
-  const fileNames=activeFromFiles.map(f=>f.name);
+  const fileNames=activeFromFiles.map(f=>typeof f==='object'&&f.name?f.name:f);
+  const fromFileUrls=activeFromFiles.map(f=>typeof f==='object'&&f.url?f.url:'');
   if(editingFromId){
     const idx=memos.findIndex(m=>m.id===editingFromId&&m.from===currentUser);
     if(idx!==-1){memos[idx]={...memos[idx],text,files:fileNames,updatedAt:now};}
@@ -1519,7 +1560,7 @@ function sendFrom(){
   }
   saveFromMemos(memos);
   // API 저장
-  const fromEntry={from:currentUser,to:fromTarget||memos.find(m=>m.id===editingFromId)?.to,text,fileUrls:[],date:getActiveDate(),id:editingFromId||undefined};
+  const fromEntry={from:currentUser,to:fromTarget||memos.find(m=>m.id===editingFromId)?.to,text,fileUrls:fromFileUrls||[],date:getActiveDate(),id:editingFromId||undefined};
   api('saveFrom',fromEntry);
   fromTarget=null;fromFiles=[];
   document.getElementById('from-compose').style.display='none';
@@ -1557,6 +1598,22 @@ function recallFromMemo(id){
   toast('메모가 회수됐어요 ↩️');
 }
 
+function renderFileUrls(fileUrls,files){
+  if(fileUrls&&fileUrls.some(u=>u)){
+    return `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.6rem;">
+      ${fileUrls.map(url=>url?`
+        <a href="${url}" target="_blank" style="display:inline-block;">
+          <img src="${url.includes('drive.google.com')?url.replace('/view','=s200'):url}"
+            style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div style="display:none;width:72px;height:72px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);align-items:center;justify-content:center;font-size:1.5rem;">🎬</div>
+        </a>`:'').join('')}
+    </div>`;
+  }
+  if(files&&files.length)return `<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${files.join(', ')}</div>`;
+  return '';
+}
+
 function renderFromInbox(){
   const memos=getFromMemos();
   const myMemos=memos.filter(m=>m.to===currentUser);
@@ -1575,7 +1632,7 @@ function renderFromInbox(){
         <div class="from-item-date">${DATE_LABELS[m.date]||m.date} · ${m.sentAt||''}${m.updatedAt?' (수정됨)':''}</div>
       </div>
       <div class="from-item-text">${m.text||'(텍스트 없음)'}</div>
-      ${m.files?.length?`<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${m.files.join(', ')}</div>`:''}`;
+      ${renderFileUrls(m.fileUrls,m.files)}`;
     list.appendChild(div);
   });
 }
@@ -1603,7 +1660,7 @@ function renderFromSent(){
         </div>
       </div>
       <div class="from-item-text">${m.text||'(텍스트 없음)'}</div>
-      ${m.files?.length?`<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${m.files.join(', ')}</div>`:''}`;
+      ${renderFileUrls(m.fileUrls,m.files)}`;
     container.appendChild(div);
   });
 }
