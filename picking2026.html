@@ -439,6 +439,10 @@ nav{
 </head>
 <body>
 <div class="toast" id="toast"></div>
+<div id="sync-indicator" style="display:none;position:fixed;top:0.6rem;left:50%;transform:translateX(-50%);background:rgba(0,136,187,0.9);color:#fff;padding:0.3rem 0.9rem;border-radius:20px;font-size:0.72rem;z-index:9999;align-items:center;gap:0.4rem;">
+  <div style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s infinite;"></div> 동기화 중...
+</div>
+<style>@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}</style>
 
 <!-- LOGIN -->
 <div class="screen active" id="s-login">
@@ -768,6 +772,85 @@ const STICKER_INFO={
 };
 const DEFAULT_STICKERS={'7/8':['joy'],'7/9':['love'],'7/10':['serve'],'7/11':['thanks']};
 const MAX_PER_GROUP=8;
+// ── API ──
+const API_URL = 'https://script.google.com/macros/s/AKfycbyUXHYbEvntj14Ns398EGMzI6fMgco76oh8_PtoblCg7p2WM4IBylNNTVNJIeDJYlwfXg/exec';
+let _cache = {};
+let _syncing = false;
+
+async function api(action, data={}) {
+  try {
+    const res = await fetch(API_URL, {method:'POST',body:JSON.stringify({action,...data})});
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error);
+    return json.data;
+  } catch(e) { console.error('API error:',e); return null; }
+}
+
+async function syncAll() {
+  if(_syncing)return;
+  _syncing=true;
+  showSyncIndicator(true);
+  try {
+    const data=await api('getAll');
+    if(!data)return;
+    _cache.stickers=buildStickerMap(data.stickers||[]);
+    _cache.picks=buildPickMap(data.picks||[]);
+    _cache.logs=buildLogMap(data.logs||[]);
+    _cache.froms=data.froms||[];
+    _cache.gifts=data.gifts||[];
+    if(data.settings)applySettings(data.settings);
+  } finally { _syncing=false; showSyncIndicator(false); }
+}
+
+function showSyncIndicator(show){
+  const el=document.getElementById('sync-indicator');
+  if(el)el.style.display=show?'flex':'none';
+}
+
+function buildStickerMap(rows){
+  const map={};
+  rows.forEach(r=>{
+    const key=r.to+'_'+r.date;
+    if(!map[key])map[key]={};
+    if(!map[key][r.type])map[key][r.type]=[];
+    map[key][r.type].push('익명');
+  });
+  return map;
+}
+
+function buildPickMap(rows){
+  const map={};
+  rows.forEach(r=>{map[r.name]=Number(r.pickIndex);});
+  return map;
+}
+
+function buildLogMap(rows){
+  const map={};
+  rows.forEach(r=>{
+    const key=r.name+'_'+r.date;
+    if(!map[key])map[key]=[];
+    map[key].push({
+      id:r.id, text:r.text,
+      files:(()=>{try{return JSON.parse(r.fileUrls||'[]');}catch{return[];}})(),
+      savedAt:r.savedAt?new Date(r.savedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'',
+      updatedAt:r.updatedAt||''
+    });
+  });
+  return map;
+}
+
+function applySettings(s){
+  try{_cache.pickOpen=s.pickOpen==='true';}catch{}
+  try{_cache.revealed=s.revealed==='true';}catch{}
+  try{_cache.giftOpen=s.giftOpen==='true';}catch{}
+  try{_cache.todayStickers=JSON.parse(s.todayStickers||'["joy"]');}catch{}
+  try{_cache.pickOpts=JSON.parse(s.pickOpts||'[]');}catch{}
+  try{_cache.dailyTitle=s.dailyTitle||'';}catch{}
+  try{_cache.dailySub=s.dailySub||'';}catch{}
+  try{_cache.adminPw=s.adminPw||'9876';}catch{}
+  try{_cache.presets=JSON.parse(s.presets||'[]');}catch{}
+}
+
 // STORAGE
 function getData(k,def){try{const v=localStorage.getItem('p26_'+k);return v!==null?JSON.parse(v):def;}catch{return def;}}
 function setData(k,v){localStorage.setItem('p26_'+k,JSON.stringify(v));}
@@ -791,28 +874,27 @@ function getActiveDate(){
   return getData('activedate','7/8');
 }
 const setActiveDate=v=>setData('activedate',v);
-const getRevealed=()=>getData('revealed',false);
-const setRevealed=v=>setData('revealed',v);
-const getTodayStickers=()=>getData('todaystickers',DEFAULT_STICKERS[getActiveDate()]||['joy']);
-const saveTodayStickers=v=>setData('todaystickers',v);
-const getLogs=()=>getData('logs',{});
-const saveLogs=v=>setData('logs',v);
-function getLogList(user,date){const logs=getLogs();return logs[user+'_'+date]||[];}
-function saveLogList(user,date,list){const logs=getLogs();logs[user+'_'+date]=list;saveLogs(logs);}
-const getFromMemos=()=>getData('frommemos',[]);
-const saveFromMemos=v=>setData('frommemos',v);
-const getDailyMsg=()=>getData('dailymsg',{title:'', sub:''});
-const saveDailyMsg=v=>setData('dailymsg',v);
+const getRevealed=()=>_cache.revealed!==undefined?_cache.revealed:getData('revealed',false);
+const setRevealed=v=>{ _cache.revealed=v; };
+const getTodayStickers=()=>_cache.todayStickers||getData('todaystickers',DEFAULT_STICKERS[getActiveDate()]||['joy']);
+const saveTodayStickers=v=>{ _cache.todayStickers=v; };
+const getLogs=()=>_cache.logs||{};
+const saveLogs=v=>{ _cache.logs=v; };
+function getLogList(user,date){ const logs=getLogs(); return logs[user+'_'+date]||[]; }
+function saveLogList(user,date,list){ const logs=getLogs(); logs[user+'_'+date]=list; _cache.logs=logs; }
+const getFromMemos=()=>_cache.froms||[];
+const saveFromMemos=v=>{ _cache.froms=v; };
+const getDailyMsg=()=>({title:_cache.dailyTitle||'',sub:_cache.dailySub||''});
+const saveDailyMsg=v=>{ _cache.dailyTitle=v.title||''; _cache.dailySub=v.sub||''; };
 
 const getGiftOpen=()=>{
-  // 7/11이면 자동 오픈
   const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
   if(now.getMonth()===6&&now.getDate()===11)return true;
-  return getData('giftopen',false);
+  return _cache.giftOpen!==undefined?_cache.giftOpen:getData('giftopen',false);
 };
-const setGiftOpen=v=>setData('giftopen',v);
-const getGifts=()=>getData('gifts',[]);
-const saveGifts=v=>setData('gifts',v);
+const setGiftOpen=v=>{ _cache.giftOpen=v; };
+const getGifts=()=>_cache.gifts||[];
+const saveGifts=v=>{ _cache.gifts=v; };
 
 // STATE
 let currentUser=null,stickerDate=getActiveDate(),selectedPerson=null,selectedPick=null;
@@ -835,12 +917,30 @@ function doLogin(){
   currentUser=name;
   document.getElementById('nav-user-name').textContent=name;
   document.getElementById('home-name').textContent=name;
-  renderHomeMenu();
   goScreen('s-home');
+  syncAll().then(()=>{
+    renderHomeMenu();
+    // 10초마다 자동 싱크
+    if(window._syncInterval) clearInterval(window._syncInterval);
+    window._syncInterval = setInterval(()=>{
+      syncAll().then(()=>{
+        const cur=document.querySelector('.screen.active');
+        if(cur){
+          const id=cur.id;
+          if(id==='s-sticker')renderSticker();
+          else if(id==='s-picking')renderPicking();
+          else if(id==='s-from'){renderFromInbox();renderFromSent();}
+          else if(id==='s-gift')renderGift();
+        }
+      });
+    }, 10000);
+  });
 }
 
 function doLogout(){
   currentUser=null;selectedPerson=null;selectedPick=null;
+  _cache={};
+  if(window._syncInterval){clearInterval(window._syncInterval);window._syncInterval=null;}
   document.getElementById('login-name').value='';
   document.getElementById('login-birth').value='';
   document.getElementById('login-err').style.display='none';
@@ -886,7 +986,7 @@ function renderHomeMenu(){
 
 function goAdmin(){
   const pw=prompt('관리자 비밀번호를 입력하세요');
-  const currentPw=getData('adminpw','9876');if(pw!==currentPw){alert('비밀번호가 올바르지 않습니다.');return;}
+  const currentPw=getAdminPw();if(pw!==currentPw){alert('비밀번호가 올바르지 않습니다.');return;}
   goScreen('s-admin');
   renderAdmin();
 }
@@ -999,6 +1099,7 @@ function recallSticker(type){
   if(stickers[key][type].length===0)delete stickers[key][type];
   saveStickers(stickers);
   toast(`${selectedPerson}님의 ${STICKER_INFO[type].label} 스티커를 회수했어요`);
+  api('recallSticker',{to:selectedPerson,type,date:stickerDate});
   renderSticker();
   renderStickerTypes();
 }
@@ -1013,6 +1114,7 @@ function giveSticker(type){
   stickers[key][type].push('익명');
   saveStickers(stickers);
   toast(`${selectedPerson}님에게 ${STICKER_INFO[type].label} 스티커를 달았어요 ✨`);
+  api('saveSticker',{to:selectedPerson,type,date:stickerDate});
   renderSticker();
   renderStickerTypes();
 }
@@ -1152,6 +1254,7 @@ function confirmPick(){
   if((groupCounts[selectedPick]||0)>=MAX_PER_GROUP){toast('이미 마감된 그룹이에요!');renderPicking();return;}
   picks[currentUser]=selectedPick;
   savePicks(picks);
+  api('savePick',{name:currentUser,pickIndex:selectedPick});
   selectedPick=null;
   toast('선택 완료! ✨');
   renderPicking();
@@ -1162,6 +1265,7 @@ function cancelPick(){
   const picks=getPicks();
   delete picks[currentUser];
   savePicks(picks);
+  api('deletePick',{name:currentUser});
   selectedPick=null;
   toast('선택이 취소됐어요. 다시 선택해주세요!');
   renderPicking();
@@ -1267,6 +1371,9 @@ function saveLog(){
     toast('기록이 추가됐어요 📓');
   }
   saveLogList(currentUser,logDate,list);
+  // API 저장
+  const logEntry={name:currentUser,date:logDate,text,fileUrls:[],id:editId||undefined};
+  api('saveLog',logEntry);
   cancelLogEdit();
   renderSavedLogs();
 }
@@ -1301,6 +1408,7 @@ function deleteLog(date,id){
   if(!confirm('이 기록을 삭제할까요?'))return;
   const list=getLogList(currentUser,date).filter(l=>l.id!==id);
   saveLogList(currentUser,date,list);
+  api('deleteLog',{id,name:currentUser});
   renderSavedLogs();
   toast('기록이 삭제됐어요');
 }
@@ -1410,6 +1518,9 @@ function sendFrom(){
     toast(`${fromTarget}님에게 메모를 전달했어요 💌`);
   }
   saveFromMemos(memos);
+  // API 저장
+  const fromEntry={from:currentUser,to:fromTarget||memos.find(m=>m.id===editingFromId)?.to,text,fileUrls:[],date:getActiveDate(),id:editingFromId||undefined};
+  api('saveFrom',fromEntry);
   fromTarget=null;fromFiles=[];
   document.getElementById('from-compose').style.display='none';
   document.getElementById('from-text').value='';
@@ -1440,6 +1551,7 @@ function recallFromMemo(id){
   if(!confirm('이 메모를 회수할까요? 상대방 화면에서도 사라집니다.')){return;}
   const memos=getFromMemos().filter(m=>!(m.id===id&&m.from===currentUser));
   saveFromMemos(memos);
+  api('recallFrom',{id,from:currentUser});
   renderFromInbox();
   renderFromSent();
   toast('메모가 회수됐어요 ↩️');
@@ -1543,6 +1655,7 @@ function adminSaveStickers(){
   const types=['joy','love','thanks','serve'].filter(t=>document.querySelector(`#ck-${t} input`)?.checked);
   if(types.length===0){toast('최소 1개 이상 선택해주세요.');return;}
   saveTodayStickers(types);
+  api('saveSettings',{settings:{todayStickers:JSON.stringify(types)}});
   toast('스티커 설정 저장 완료 ✅');
 }
 
@@ -1613,6 +1726,12 @@ function applyPreset(idx){
   savePicks({});
   setRevealed(false);
   setPickOpen(true);
+  api('saveSettings',{settings:{
+    pickOpts:JSON.stringify(p.opts),
+    pickOpen:'true',
+    revealed:'false'
+  }});
+  api('saveSettings',{settings:{picks:'{}'}});
   renderAdminPickStatus();
   renderPresetList();
   toast(`"${p.name}" 픽킹이 열렸어요 🟢`);
@@ -1627,12 +1746,14 @@ function setTestDate(val){
 
 function adminOpenPicking(){
   setPickOpen(true);
+  api('saveSettings',{settings:{pickOpen:'true'}});
   renderAdminPickStatus();
   toast('픽킹이 열렸어요 🟢');
 }
 
 function adminClosePicking(){
   setPickOpen(false);
+  api('saveSettings',{settings:{pickOpen:'false'}});
   renderAdminPickStatus();
   toast('픽킹이 닫혔어요 🔴');
 }
@@ -1656,8 +1777,16 @@ function adminResetPicking(){
   toast('픽킹 초기화 완료');
 }
 
-function adminReveal(){setRevealed(true);toast('결과 공개 완료 ✅');}
-function adminHideReveal(){setRevealed(false);toast('결과 숨김 처리 완료');}
+function adminReveal(){
+  setRevealed(true);
+  api('saveSettings',{settings:{revealed:'true'}});
+  toast('결과 공개 완료 ✅');
+}
+function adminHideReveal(){
+  setRevealed(false);
+  api('saveSettings',{settings:{revealed:'false'}});
+  toast('결과 숨김 처리 완료');
+}
 
 // ── GIFT ──
 function renderGift(){
@@ -1709,6 +1838,7 @@ function saveGift(){
   if(idx!==-1){gifts[idx]=entry;toast('말씀이 수정됐어요 ✏️');}
   else{gifts.push(entry);toast('나의 GIFT가 등록됐어요 🎁');}
   saveGifts(gifts);
+  api('saveGift',{name:currentUser,verse,reason});
   renderGift();
   renderHomeMenu();
 }
@@ -1717,23 +1847,33 @@ function adminSaveDailyMsg(){
   const title=document.getElementById('daily-title').value.trim();
   const sub=document.getElementById('daily-sub').value.trim();
   saveDailyMsg({title,sub});
+  api('saveSettings',{settings:{dailyTitle:title,dailySub:sub}});
   renderHomeMenu();
   toast('메시지가 저장됐어요 💬');
 }
 
 function adminClearDailyMsg(){
   saveDailyMsg({title:'',sub:''});
+  api('saveSettings',{settings:{dailyTitle:'',dailySub:''}});
   document.getElementById('daily-title').value='';
   document.getElementById('daily-sub').value='';
   renderHomeMenu();
   toast('메시지가 지워졌어요');
 }
 
-function adminOpenGift(){setGiftOpen(true);renderAdmin();renderHomeMenu();toast('GIFT가 열렸어요 🎁');}
-function adminCloseGift(){setGiftOpen(false);renderAdmin();renderHomeMenu();toast('GIFT가 닫혔어요');}
+function adminOpenGift(){
+  setGiftOpen(true);
+  api('saveSettings',{settings:{giftOpen:'true'}});
+  renderAdmin();renderHomeMenu();toast('GIFT가 열렸어요 🎁');
+}
+function adminCloseGift(){
+  setGiftOpen(false);
+  api('saveSettings',{settings:{giftOpen:'false'}});
+  renderAdmin();renderHomeMenu();toast('GIFT가 닫혔어요');
+}
 
-function getAdminPw(){return getData('adminpw','9876');}
-function saveAdminPw(v){setData('adminpw',v);}
+function getAdminPw(){return _cache.adminPw||getData('adminpw','9876');}
+function saveAdminPw(v){_cache.adminPw=v;setData('adminpw',v);}
 
 function changeAdminPw(){
   const cur=document.getElementById('pw-current').value;
@@ -1743,6 +1883,7 @@ function changeAdminPw(){
   if(!nw||nw.length<4){toast('새 비밀번호는 4자리 이상으로 설정해주세요.');return;}
   if(nw!==cf){toast('새 비밀번호가 일치하지 않아요.');return;}
   saveAdminPw(nw);
+  api('saveSettings',{settings:{adminPw:nw}});
   document.getElementById('pw-current').value='';
   document.getElementById('pw-new').value='';
   document.getElementById('pw-confirm').value='';
