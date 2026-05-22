@@ -23,35 +23,65 @@
 }
 
 /* TAB THEMES */
+/* 스티커 - 민트/에메랄드 */
 #s-sticker nav{background:rgba(225,248,244,0.95) !important;}
 #s-sticker nav .nav-title{color:#00936b !important;}
 #s-sticker nav .nav-title span{color:#00c4a0 !important;}
 #s-sticker nav .back-btn{color:#00936b !important;}
 #s-sticker{background:#f0fdf9;}
+#s-sticker .section-label{color:#00936b;}
+#s-sticker .date-tab.active{background:#00936b;border-color:#00936b;}
+#s-sticker .today-theme-name{color:#00936b;}
+#s-sticker .person-card:hover{border-color:#00936b;}
+#s-sticker .person-card.selected{border-color:#00936b;background:rgba(0,147,107,0.06);}
+#s-sticker .sticker-panel{border-color:rgba(0,147,107,0.2);}
+#s-sticker .sticker-panel-name{color:#00936b;}
+#s-sticker .given-badge{color:#00936b;}
 
+/* 픽킹 - 오렌지 */
 #s-picking nav{background:rgba(255,245,235,0.95) !important;}
 #s-picking nav .nav-title{color:#c25a00 !important;}
 #s-picking nav .nav-title span{color:#ff7b35 !important;}
 #s-picking nav .back-btn{color:#c25a00 !important;}
 #s-picking{background:#fff8f2;}
+#s-picking .pick-closed-title{color:#c25a00;}
+#s-picking .result-title{color:#c25a00;}
+#s-picking .result-group-name{color:#c25a00;}
 
+/* MY LOG - 인디고 */
 #s-mylog nav{background:rgba(235,240,255,0.95) !important;}
 #s-mylog nav .nav-title{color:#2c4fa0 !important;}
 #s-mylog nav .nav-title span{color:#4a7ad4 !important;}
 #s-mylog nav .back-btn{color:#2c4fa0 !important;}
 #s-mylog{background:#f4f7ff;}
+#s-mylog .section-label{color:#2c4fa0;}
+#s-mylog .date-tab.active{background:#2c4fa0;border-color:#2c4fa0;}
+#s-mylog .log-textarea:focus{border-color:#2c4fa0;box-shadow:0 0 0 3px rgba(44,79,160,0.1);}
+#s-mylog .btn-save-log{background:linear-gradient(135deg,#2c4fa0,#1a3272);}
+#s-mylog .saved-log-date{color:#2c4fa0;}
 
+/* FROM - 코랄 */
 #s-from nav{background:rgba(255,240,242,0.95) !important;}
 #s-from nav .nav-title{color:#b03060 !important;}
 #s-from nav .nav-title span{color:#e06080 !important;}
 #s-from nav .back-btn{color:#b03060 !important;}
 #s-from{background:#fff5f7;}
+#s-from .section-label{color:#b03060;}
+#s-from .from-person-btn:hover{border-color:#b03060;}
+#s-from .from-person-btn.selected{border-color:#b03060;color:#b03060;background:rgba(176,48,96,0.06);}
+#s-from .from-to-label{color:#b03060;}
+#s-from .btn-send{background:linear-gradient(135deg,#b03060,#8a1a40);}
+#s-from .from-inbox-title{color:#b03060;}
+#s-from .from-item-from{color:#b03060;}
 
+/* GIFT - 골든 옐로우 */
 #s-gift nav{background:rgba(255,250,230,0.95) !important;}
 #s-gift nav .nav-title{color:#9a6d00 !important;}
 #s-gift nav .nav-title span{color:#e8a800 !important;}
 #s-gift nav .back-btn{color:#9a6d00 !important;}
 #s-gift{background:#fffbee;}
+#s-gift .section-label{color:#9a6d00;}
+#s-gift .gift-locked-title{color:#9a6d00;}
 
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
@@ -357,6 +387,13 @@ nav{
 .pick-closed-title{font-size:1.1rem;font-weight:700;margin-bottom:0.5rem;}
 .pick-closed-sub{font-size:0.83rem;color:var(--muted);}
 
+/* ADMIN TABS */
+.admin-tabs{display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:1.25rem;overflow-x:auto;}
+.admin-tab{padding:0.7rem 1rem;font-size:0.8rem;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all 0.2s;}
+.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+.admin-tab-content{display:none;}
+.admin-tab-content.active{display:block;}
+
 /* GIFT */
 .gift-locked{text-align:center;padding:3rem 1rem;}
 .gift-locked-emoji{font-size:3rem;margin-bottom:1rem;}
@@ -577,106 +614,133 @@ nav{
     </div>
   </nav>
   <div class="page-content">
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchAdminTab('home')">📢 홈</button>
+      <button class="admin-tab" onclick="switchAdminTab('sticker')">🏷️ 스티커</button>
+      <button class="admin-tab" onclick="switchAdminTab('picking')">🎯 픽킹</button>
+      <button class="admin-tab" onclick="switchAdminTab('gift')">🎁 GIFT</button>
+      <button class="admin-tab" onclick="switchAdminTab('settings')">⚙️ 설정</button>
+    </div>
 
-    <div class="admin-section">
-      <div class="admin-section-title">💬 홈 화면 오늘의 메시지</div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">홈 화면 인사말 아래에 표시됩니다. 매일 바꿔 사용하세요.</p>
-      <input class="admin-input" id="daily-title" placeholder="제목 (예: Good morning ☀️)">
-      <textarea class="admin-input" id="daily-sub" placeholder="내용 (예: 오늘도 하나님과 함께 걸어가요)" style="height:80px;resize:none;"></textarea>
-      <div style="display:flex;gap:0.5rem;">
-        <button class="btn-save" onclick="adminSaveDailyMsg()">메시지 저장</button>
-        <button class="btn-danger" onclick="adminClearDailyMsg()">메시지 지우기</button>
-      </div>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-title">🏷️ 오늘의 스티커 설정 <span id="admin-today-label" style="font-size:0.78rem;font-weight:400;color:var(--muted);margin-left:0.5rem;"></span></div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">오늘 달 수 있는 스티커 종류를 선택하세요 (다중 선택 가능)</p>
-      <div class="sticker-checkbox-group" id="sticker-checkbox-group">
-        <label class="sticker-checkbox" id="ck-joy">
-          <input type="checkbox" value="joy" onchange="updateStickerCheckbox('joy')">
-          <div class="s-dot s-joy" style="width:14px;height:14px;"></div> 기쁨
-        </label>
-        <label class="sticker-checkbox" id="ck-love">
-          <input type="checkbox" value="love" onchange="updateStickerCheckbox('love')">
-          <div class="s-dot s-love" style="width:14px;height:14px;"></div> 사랑
-        </label>
-        <label class="sticker-checkbox" id="ck-thanks">
-          <input type="checkbox" value="thanks" onchange="updateStickerCheckbox('thanks')">
-          <div class="s-dot s-thanks" style="width:14px;height:14px;"></div> 감사
-        </label>
-        <label class="sticker-checkbox" id="ck-serve">
-          <input type="checkbox" value="serve" onchange="updateStickerCheckbox('serve')">
-          <div class="s-dot s-serve" style="width:14px;height:14px;"></div> 섬김
-        </label>
-      </div>
-      <button class="btn-save" onclick="adminSaveStickers()">스티커 저장</button>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-title">🛠️ 테스트 날짜 설정 <span style="font-size:0.72rem;font-weight:400;color:var(--muted);">(아웃리치 기간 외 테스트용)</span></div>
-      <select id="test-date" class="admin-input" onchange="setTestDate(this.value)" style="margin-bottom:0;">
-        <option value="">자동 (한국 날짜 기준)</option>
-        <option value="7/8">7월 8일 (DAY 1) — 테스트</option>
-        <option value="7/9">7월 9일 (DAY 2) — 테스트</option>
-        <option value="7/10">7월 10일 (DAY 3) — 테스트</option>
-        <option value="7/11">7월 11일 (DAY 4) — 테스트</option>
-      </select>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-title">🎯 픽킹 상태</div>
-      <div id="admin-pick-status" style="font-size:0.85rem;margin-bottom:0.85rem;"></div>
-      <button class="btn-save" id="btn-open-pick" onclick="adminOpenPicking()" style="display:none;">픽킹 열기 🟢</button>
-      <button class="btn-danger" id="btn-close-pick" onclick="adminClosePicking()" style="display:none;margin-left:0;">픽킹 닫기 🔴</button>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-title">📋 픽킹 프리셋</div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">미리 만들어두고 클릭 한 번으로 픽킹을 열 수 있어요.</p>
-      <div id="preset-list"></div>
-      <div id="preset-form" style="margin-top:1rem;background:var(--surface2);border-radius:12px;padding:1rem;">
-        <div style="font-size:0.82rem;font-weight:700;color:var(--accent);margin-bottom:0.75rem;" id="preset-form-title">새 프리셋 추가</div>
-        <input class="admin-input" id="preset-name" placeholder="프리셋 이름 (예: 점심 - 짜장면)">
-        <div id="preset-opts">
-          <div class="admin-pick-item"><div class="admin-pick-num">1</div><div class="pick-input-group"><input class="admin-input" id="popt-kw-0" placeholder="키워드 (예: 향미관)"><input class="admin-input" id="popt-desc-0" placeholder="설명 (선택사항)"></div></div>
-          <div class="admin-pick-item"><div class="admin-pick-num">2</div><div class="pick-input-group"><input class="admin-input" id="popt-kw-1" placeholder="키워드"><input class="admin-input" id="popt-desc-1" placeholder="설명 (선택사항)"></div></div>
-          <div class="admin-pick-item"><div class="admin-pick-num">3</div><div class="pick-input-group"><input class="admin-input" id="popt-kw-2" placeholder="키워드"><input class="admin-input" id="popt-desc-2" placeholder="설명 (선택사항)"></div></div>
-        </div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-          <button class="btn-save" onclick="savePreset()">저장</button>
-          <button class="btn-danger" onclick="cancelPresetEdit()" id="btn-cancel-preset" style="display:none;">취소</button>
+    <!-- 홈 탭 -->
+    <div class="admin-tab-content active" id="atab-home">
+      <div class="admin-section">
+        <div class="admin-section-title">💬 오늘의 메시지</div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">홈 화면 인사말 아래에 표시됩니다. 매일 바꿔 사용하세요.</p>
+        <input class="admin-input" id="daily-title" placeholder="제목 (예: Good morning ☀️)">
+        <textarea class="admin-input" id="daily-sub" placeholder="내용 (예: 오늘도 하나님과 함께 걸어가요)" style="height:80px;resize:none;"></textarea>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn-save" onclick="adminSaveDailyMsg()">메시지 저장</button>
+          <button class="btn-danger" onclick="adminClearDailyMsg()">메시지 지우기</button>
         </div>
       </div>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">🎁 GIFT 오픈 설정</div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">7/11 자동 오픈 · 그 전에 미리 열 수 있어요.</p>
-      <div id="gift-status-label" style="font-size:0.85rem;margin-bottom:0.85rem;"></div>
-      <button class="btn-save" onclick="adminOpenGift()">GIFT 지금 열기 🎁</button>
-      <button class="btn-danger" onclick="adminCloseGift()" style="margin-left:0.5rem;">GIFT 닫기</button>
+
+    <!-- 스티커 탭 -->
+    <div class="admin-tab-content" id="atab-sticker">
+      <div class="admin-section">
+        <div class="admin-section-title">🏷️ 오늘의 스티커 설정 <span id="admin-today-label" style="font-size:0.78rem;font-weight:400;color:var(--muted);margin-left:0.5rem;"></span></div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">오늘 달 수 있는 스티커 종류를 선택하세요 (다중 선택 가능)</p>
+        <div class="sticker-checkbox-group" id="sticker-checkbox-group">
+          <label class="sticker-checkbox" id="ck-joy">
+            <input type="checkbox" value="joy" onchange="updateStickerCheckbox('joy')">
+            <div class="s-dot s-joy" style="width:14px;height:14px;"></div> 기쁨
+          </label>
+          <label class="sticker-checkbox" id="ck-love">
+            <input type="checkbox" value="love" onchange="updateStickerCheckbox('love')">
+            <div class="s-dot s-love" style="width:14px;height:14px;"></div> 사랑
+          </label>
+          <label class="sticker-checkbox" id="ck-thanks">
+            <input type="checkbox" value="thanks" onchange="updateStickerCheckbox('thanks')">
+            <div class="s-dot s-thanks" style="width:14px;height:14px;"></div> 감사
+          </label>
+          <label class="sticker-checkbox" id="ck-serve">
+            <input type="checkbox" value="serve" onchange="updateStickerCheckbox('serve')">
+            <div class="s-dot s-serve" style="width:14px;height:14px;"></div> 섬김
+          </label>
+        </div>
+        <button class="btn-save" onclick="adminSaveStickers()">스티커 저장</button>
+      </div>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">📢 결과 공개 설정</div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">전원 선택 완료 전에도 결과를 공개할 수 있습니다.</p>
-      <button class="btn-save" onclick="adminReveal()">지금 결과 공개</button>
-      <button class="btn-danger" onclick="adminHideReveal()" style="margin-left:0.5rem;">결과 숨기기</button>
+
+    <!-- 픽킹 탭 -->
+    <div class="admin-tab-content" id="atab-picking">
+      <div class="admin-section">
+        <div class="admin-section-title">🎯 픽킹 상태</div>
+        <div id="admin-pick-status" style="font-size:0.85rem;margin-bottom:0.85rem;"></div>
+        <button class="btn-save" id="btn-open-pick" onclick="adminOpenPicking()" style="display:none;">픽킹 열기 🟢</button>
+        <button class="btn-danger" id="btn-close-pick" onclick="adminClosePicking()" style="display:none;margin-left:0;">픽킹 닫기 🔴</button>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">📋 픽킹 프리셋</div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">미리 만들어두고 클릭 한 번으로 픽킹을 열 수 있어요.</p>
+        <div id="preset-list"></div>
+        <div id="preset-form" style="margin-top:1rem;background:var(--surface2);border-radius:12px;padding:1rem;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--accent);margin-bottom:0.75rem;" id="preset-form-title">새 프리셋 추가</div>
+          <input class="admin-input" id="preset-name" placeholder="프리셋 이름 (예: 점심 - 짜장면)">
+          <div id="preset-opts">
+            <div class="admin-pick-item"><div class="admin-pick-num">1</div><div class="pick-input-group"><input class="admin-input" id="popt-kw-0" placeholder="키워드 (예: 향미관)"><input class="admin-input" id="popt-desc-0" placeholder="설명 (선택사항)"></div></div>
+            <div class="admin-pick-item"><div class="admin-pick-num">2</div><div class="pick-input-group"><input class="admin-input" id="popt-kw-1" placeholder="키워드"><input class="admin-input" id="popt-desc-1" placeholder="설명 (선택사항)"></div></div>
+            <div class="admin-pick-item"><div class="admin-pick-num">3</div><div class="pick-input-group"><input class="admin-input" id="popt-kw-2" placeholder="키워드"><input class="admin-input" id="popt-desc-2" placeholder="설명 (선택사항)"></div></div>
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+            <button class="btn-save" onclick="savePreset()">저장</button>
+            <button class="btn-danger" onclick="cancelPresetEdit()" id="btn-cancel-preset" style="display:none;">취소</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">📢 결과 공개 설정</div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">전원 선택 완료 전에도 결과를 공개할 수 있습니다.</p>
+        <button class="btn-save" onclick="adminReveal()">지금 결과 공개</button>
+        <button class="btn-danger" onclick="adminHideReveal()" style="margin-left:0.5rem;">결과 숨기기</button>
+      </div>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">🔑 관리자 비밀번호 변경</div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">변경 후 모든 관리자에게 새 비밀번호를 공유하세요.</p>
-      <input class="admin-input" id="pw-current" type="password" placeholder="현재 비밀번호">
-      <input class="admin-input" id="pw-new" type="password" placeholder="새 비밀번호">
-      <input class="admin-input" id="pw-confirm" type="password" placeholder="새 비밀번호 확인">
-      <button class="btn-save" onclick="changeAdminPw()">비밀번호 변경</button>
+
+    <!-- GIFT 탭 -->
+    <div class="admin-tab-content" id="atab-gift">
+      <div class="admin-section">
+        <div class="admin-section-title">🎁 GIFT 오픈 설정</div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">7/11 자동 오픈 · 그 전에 미리 열 수 있어요.</p>
+        <div id="gift-status-label" style="font-size:0.85rem;margin-bottom:0.85rem;"></div>
+        <button class="btn-save" onclick="adminOpenGift()">GIFT 지금 열기 🎁</button>
+        <button class="btn-danger" onclick="adminCloseGift()" style="margin-left:0.5rem;">GIFT 닫기</button>
+      </div>
     </div>
-    <div class="admin-section" style="border-color:rgba(224,92,92,0.3);">
-      <div class="admin-section-title" style="color:var(--accent3);">🗑️ 테스트 데이터 초기화</div>
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.4rem;">항목별로 선택해서 초기화할 수 있어요.</p>
-      <p style="font-size:0.75rem;color:var(--accent3);margin-bottom:0.85rem;">⚠️ 삭제된 데이터는 복구되지 않습니다.</p>
-      <div style="display:flex;flex-direction:column;gap:0.5rem;">
-        <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('picks')">픽킹 투표 결과 초기화</button>
-        <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('stickers')">스티커 전체 초기화</button>
-        <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('logs')">MY LOG 전체 초기화</button>
-        <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('frommemos')">FROM 메모 전체 초기화</button>
-        <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('presets')">프리셋 전체 초기화</button>
-        <button class="btn-danger" style="margin-left:0;text-align:left;background:rgba(224,92,92,0.08);font-weight:700;border-width:2px;" onclick="clearAllData()">🚨 전체 데이터 완전 초기화</button>
+
+    <!-- 설정 탭 -->
+    <div class="admin-tab-content" id="atab-settings">
+      <div class="admin-section">
+        <div class="admin-section-title">🛠️ 테스트 날짜 설정 <span style="font-size:0.72rem;font-weight:400;color:var(--muted);">(아웃리치 기간 외 테스트용)</span></div>
+        <select id="test-date" class="admin-input" onchange="setTestDate(this.value)" style="margin-bottom:0;">
+          <option value="">자동 (한국 날짜 기준)</option>
+          <option value="7/8">7월 8일 (DAY 1) — 테스트</option>
+          <option value="7/9">7월 9일 (DAY 2) — 테스트</option>
+          <option value="7/10">7월 10일 (DAY 3) — 테스트</option>
+          <option value="7/11">7월 11일 (DAY 4) — 테스트</option>
+        </select>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">🔑 관리자 비밀번호 변경</div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem;">변경 후 모든 관리자에게 새 비밀번호를 공유하세요.</p>
+        <input class="admin-input" id="pw-current" type="password" placeholder="현재 비밀번호">
+        <input class="admin-input" id="pw-new" type="password" placeholder="새 비밀번호">
+        <input class="admin-input" id="pw-confirm" type="password" placeholder="새 비밀번호 확인">
+        <button class="btn-save" onclick="changeAdminPw()">비밀번호 변경</button>
+      </div>
+      <div class="admin-section" style="border-color:rgba(224,92,92,0.3);">
+        <div class="admin-section-title" style="color:var(--accent3);">🗑️ 데이터 초기화</div>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.4rem;">항목별로 선택해서 초기화할 수 있어요.</p>
+        <p style="font-size:0.75rem;color:var(--accent3);margin-bottom:0.85rem;">⚠️ 삭제된 데이터는 복구되지 않습니다.</p>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('picks')">픽킹 투표 결과 초기화</button>
+          <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('stickers')">스티커 전체 초기화</button>
+          <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('logs')">MY LOG 전체 초기화</button>
+          <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('frommemos')">FROM 메모 전체 초기화</button>
+          <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('presets')">프리셋 전체 초기화</button>
+          <button class="btn-danger" style="margin-left:0;text-align:left;" onclick="clearData('gifts')">GIFT 말씀 전체 초기화</button>
+          <button class="btn-danger" style="margin-left:0;text-align:left;background:rgba(224,92,92,0.08);font-weight:700;border-width:2px;" onclick="clearAllData()">🚨 전체 데이터 완전 초기화</button>
+        </div>
       </div>
     </div>
   </div>
@@ -919,10 +983,24 @@ function renderStickerTypes(){
     const count=(s[type]||[]).length;
     const btn=document.createElement('button');
     btn.className='sticker-btn';
-    btn.innerHTML=`<div class="sticker-btn-left"><div class="s-icon ${info.cls}"></div>${info.label}</div>${count>0?`<span class="given-badge">${count}개</span>`:''}`;
+    btn.innerHTML=`<div class="sticker-btn-left"><div class="s-icon ${info.cls}"></div>${info.label}</div><div style="display:flex;align-items:center;gap:0.5rem;">${count>0?`<span class="given-badge">${count}개</span>`:''} ${count>0&&stickerDate===getActiveDate()?`<button onclick="event.stopPropagation();recallSticker('${type}')" style="font-size:0.7rem;color:var(--accent3);background:none;border:none;cursor:pointer;padding:0.1rem 0.3rem;">회수</button>`:''}</div>`;
     btn.onclick=()=>giveSticker(type);
     container.appendChild(btn);
   });
+}
+
+function recallSticker(type){
+  if(!selectedPerson)return;
+  if(stickerDate!==getActiveDate()){toast('오늘 날짜의 스티커만 회수할 수 있어요.');return;}
+  const stickers=getStickers();
+  const key=selectedPerson+'_'+stickerDate;
+  if(!stickers[key]||!stickers[key][type]||stickers[key][type].length===0){toast('회수할 스티커가 없어요.');return;}
+  stickers[key][type].pop();
+  if(stickers[key][type].length===0)delete stickers[key][type];
+  saveStickers(stickers);
+  toast(`${selectedPerson}님의 ${STICKER_INFO[type].label} 스티커를 회수했어요`);
+  renderSticker();
+  renderStickerTypes();
 }
 
 function giveSticker(type){
@@ -1005,7 +1083,7 @@ function renderPicking(){
     </div>`:'';
 
   if(myPick!==undefined){
-    const canChange=!getRevealed()&&!allVoted;
+    const canChange=(!getRevealed()&&!allVoted)||isAdmin;
     content.innerHTML=heroHtml+adminRealtimeBtn+`
       <div class="pick-done">
         <div class="pick-done-emoji">✅</div>
@@ -1025,7 +1103,10 @@ function renderPicking(){
   }
 
   const groupCounts=[0,0,0];
-  Object.values(picks).forEach(idx=>{if(groupCounts[idx]!==undefined)groupCounts[idx]++;});
+  Object.entries(picks).forEach(([name,idx])=>{
+    if(name===currentUser)return; // 내 선택은 제외 (변경 시 정확한 슬롯 표시)
+    if(groupCounts[idx]!==undefined)groupCounts[idx]++;
+  });
 
   content.innerHTML=heroHtml+`
     <div class="pick-cards">
@@ -1063,7 +1144,11 @@ function confirmPick(){
   if(selectedPick===null)return;
   const picks=getPicks();
   const groupCounts=[0,0,0];
-  Object.values(picks).forEach(i=>{if(groupCounts[i]!==undefined)groupCounts[i]++;});
+  // 내 이전 선택 제외하고 카운트
+  Object.entries(picks).forEach(([name,i])=>{
+    if(name===currentUser)return;
+    if(groupCounts[i]!==undefined)groupCounts[i]++;
+  });
   if((groupCounts[selectedPick]||0)>=MAX_PER_GROUP){toast('이미 마감된 그룹이에요!');renderPicking();return;}
   picks[currentUser]=selectedPick;
   savePicks(picks);
@@ -1409,6 +1494,15 @@ function renderFromSent(){
       ${m.files?.length?`<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${m.files.join(', ')}</div>`:''}`;
     container.appendChild(div);
   });
+}
+
+function switchAdminTab(tab){
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-content').forEach(t=>t.classList.remove('active'));
+  const tabs=['home','sticker','picking','gift','settings'];
+  const idx=tabs.indexOf(tab);
+  document.querySelectorAll('.admin-tab')[idx]?.classList.add('active');
+  document.getElementById('atab-'+tab)?.classList.add('active');
 }
 
 // ── ADMIN ──
