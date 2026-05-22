@@ -795,8 +795,14 @@ async function syncAll() {
     if(!data)return;
     _cache.stickers=buildStickerMap(data.stickers||[]);
     _cache.picks=buildPickMap(data.picks||[]);
-    _cache.logs=buildLogMap(data.logs||[]);
-    _cache.froms=data.froms||[];
+    // 로컬에서 새로 추가한 항목 보존하며 병합
+    const serverLogs=buildLogMap(data.logs||[]);
+    _cache.logs=serverLogs;
+    // froms: id 기반 병합
+    const serverFromIds=new Set((data.froms||[]).map(f=>f.id));
+    const serverFromsNorm=(data.froms||[]).map(normalizeFrom);
+    const localOnlyFroms=(_cache.froms||[]).filter(f=>f.id&&!serverFromIds.has(f.id));
+    _cache.froms=[...serverFromsNorm,...localOnlyFroms];
     _cache.gifts=data.gifts||[];
     if(data.settings)applySettings(data.settings);
   } finally { _syncing=false; showSyncIndicator(false); }
@@ -822,6 +828,17 @@ function buildPickMap(rows){
   const map={};
   rows.forEach(r=>{map[r.name]=Number(r.pickIndex);});
   return map;
+}
+
+function normalizeFrom(row){
+  // Sheets에서 온 row 또는 로컬 객체 모두 처리
+  if(typeof row==='object'&&row.from!==undefined)return row;
+  // Sheets row 배열인 경우
+  return {
+    id:row[0],from:row[1],to:row[2],text:row[3],
+    fileUrls:(()=>{try{return JSON.parse(row[4]||'[]');}catch{return[];}})(),
+    date:row[5],sentAt:row[6],updatedAt:row[7]||''
+  };
 }
 
 function buildLogMap(rows){
@@ -1453,17 +1470,7 @@ function renderSavedLogs(){
         </div>
       </div>
       <div class="saved-log-text">${entry.text||'(텍스트 없음)'}</div>
-      ${entry.fileUrls?.some(u=>u)?`
-        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.6rem;">
-          ${entry.fileUrls.map((url,i)=>url?`
-            <a href="${url}" target="_blank" style="display:inline-block;">
-              <img src="${url.includes('drive.google.com')?url.replace('/view','=s200'):url}"
-                style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-              <div style="display:none;width:72px;height:72px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);align-items:center;justify-content:center;font-size:1.5rem;">🎬</div>
-            </a>`:'').join('')}
-        </div>`
-      :entry.files?.length?`<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${entry.files.join(', ')}</div>`:''}`;
+      ${renderFileUrls(entry.fileUrls,entry.files)}`;
     container.appendChild(div);
   });
 }
@@ -1559,8 +1566,18 @@ function sendFrom(){
     toast(`${fromTarget}님에게 메모를 전달했어요 💌`);
   }
   saveFromMemos(memos);
-  // API 저장
-  const fromEntry={from:currentUser,to:fromTarget||memos.find(m=>m.id===editingFromId)?.to,text,fileUrls:fromFileUrls||[],date:getActiveDate(),id:editingFromId||undefined};
+  const toName=fromTarget||memos.find(m=>m.id===editingFromId)?.to;
+  const now2=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  const newId=editingFromId||('from_'+Date.now());
+  if(!editingFromId){
+    // 새 메모를 캐시에 바로 추가
+    const newMemo={id:newId,from:currentUser,to:toName,text,fileUrls:fromFileUrls||[],date:getActiveDate(),sentAt:now2,updatedAt:''};
+    _cache.froms=[...(_cache.froms||[]),newMemo];
+  } else {
+    const idx2=(_cache.froms||[]).findIndex(m=>m.id===editingFromId);
+    if(idx2!==-1){_cache.froms[idx2]={..._cache.froms[idx2],text,fileUrls:fromFileUrls||[],updatedAt:now2};}
+  }
+  const fromEntry={from:currentUser,to:toName,text,fileUrls:fromFileUrls||[],date:getActiveDate(),id:editingFromId||newId};
   api('saveFrom',fromEntry);
   fromTarget=null;fromFiles=[];
   document.getElementById('from-compose').style.display='none';
@@ -1598,16 +1615,38 @@ function recallFromMemo(id){
   toast('메모가 회수됐어요 ↩️');
 }
 
+function driveImgUrl(url){
+  // Drive 뷰 URL에서 파일 ID 추출 후 직접 이미지 URL 생성
+  if(!url)return '';
+  const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m)return 'https://lh3.googleusercontent.com/d/'+m[1];
+  return url;
+}
+
+function driveDownloadUrl(url){
+  if(!url)return '';
+  const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m)return 'https://drive.google.com/uc?export=download&id='+m[1];
+  return url;
+}
+
 function renderFileUrls(fileUrls,files){
-  if(fileUrls&&fileUrls.some(u=>u)){
-    return `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.6rem;">
-      ${fileUrls.map(url=>url?`
-        <a href="${url}" target="_blank" style="display:inline-block;">
-          <img src="${url.includes('drive.google.com')?url.replace('/view','=s200'):url}"
-            style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-          <div style="display:none;width:72px;height:72px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);align-items:center;justify-content:center;font-size:1.5rem;">🎬</div>
-        </a>`:'').join('')}
+  const urls=(fileUrls||[]).filter(u=>u);
+  if(urls.length){
+    return `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.6rem;">
+      ${urls.map(url=>{
+        const imgUrl=driveImgUrl(url);
+        const dlUrl=driveDownloadUrl(url);
+        return `<div style="position:relative;">
+          <a href="${dlUrl}" target="_blank" download>
+            <img src="${imgUrl}"
+              style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);display:block;"
+              onerror="this.parentElement.parentElement.innerHTML='<div style=\'width:80px;height:80px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;\'>🎬</div><a href=\'${dlUrl}\' target=\'_blank\' style=\'font-size:0.7rem;color:var(--accent);\'>다운로드</a>'">
+          </a>
+          <a href="${dlUrl}" target="_blank" download
+            style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;border-radius:4px;padding:1px 4px;font-size:0.6rem;text-decoration:none;">↓</a>
+        </div>`;
+      }).join('')}
     </div>`;
   }
   if(files&&files.length)return `<div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">📎 ${files.join(', ')}</div>`;
@@ -1616,7 +1655,10 @@ function renderFileUrls(fileUrls,files){
 
 function renderFromInbox(){
   const memos=getFromMemos();
-  const myMemos=memos.filter(m=>m.to===currentUser);
+  const myMemos=memos.filter(m=>{
+    const to=m.to||m[2]; // Sheets에서 오는 경우 인덱스로도 접근
+    return to===currentUser;
+  });
   const list=document.getElementById('from-inbox-list');
   list.innerHTML='';
   if(myMemos.length===0){
