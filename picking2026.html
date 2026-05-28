@@ -625,18 +625,26 @@ async function syncAll(){
       sm[k][r.type].push('익명');
     });
     C.stickers=sm;
-    // picks
+    // picks - 내 선택 보존
     const pm={};
     (d.picks||[]).forEach(r=>{pm[r.name]=Number(r.pickIndex);});
+    if(C.picks&&C.picks[me]!==undefined&&pm[me]===undefined){
+      pm[me]=C.picks[me]; // 서버에 아직 반영 전이면 로컬 캐시 유지
+    }
     C.picks=pm;
     // gifts
     C.gifts=(d.gifts||[]);
-    // settings
+    // settings - 로컬에서 방금 변경한 값은 보호
     if(d.settings){
       const s=d.settings;
-      try{C.pickOpen=s.pickOpen==='true';}catch{}
-      try{C.revealed=s.revealed==='true';}catch{}
-      try{C.giftOpen=s.giftOpen==='true';}catch{}
+      const serverPickOpen=s.pickOpen==='true';
+      const serverRevealed=s.revealed==='true';
+      const serverGiftOpen=s.giftOpen==='true';
+      // 서버값이 true이면 무조건 반영, false이면 로컬 true 보호 안 함
+      // (서버에 저장 완료된 후 싱크 오면 정상 반영)
+      C.pickOpen=serverPickOpen;
+      C.revealed=serverRevealed;
+      C.giftOpen=serverGiftOpen;
       try{C.todayStickers=JSON.parse(s.todayStickers||'["joy"]');}catch{}
       try{C.pickOpts=JSON.parse(s.pickOpts||'[]');}catch{}
       try{C.dailyTitle=s.dailyTitle||'';}catch{}
@@ -681,7 +689,7 @@ function doLogin(){
         else if(cur.id==='s-picking')renderPicking();
         else if(cur.id==='s-gift')renderGift();
       });
-    },10000);
+    },15000);
   });
 }
 
@@ -944,24 +952,29 @@ function selectPick(i){
   document.getElementById('btn-confirm').disabled=false;
 }
 
-function confirmPick(){
+async function confirmPick(){
   if(sPick===null)return;
   const picks=getPicks();
   const cnt=Object.entries(picks).filter(([n,i])=>n!==me&&i===sPick).length;
   if(cnt>=MAX){toast('이미 마감된 그룹이에요!');renderPicking();return;}
   picks[me]=sPick;
   C.picks=picks;
-  api('savePick',{name:me,pickIndex:sPick});
-  sPick=null;toast('선택 완료! ✨');renderPicking();
+  const sel=sPick;
+  sPick=null;
+  toast('선택 완료! ✨');
+  renderPicking();
+  await api('savePick',{name:me,pickIndex:sel});
 }
 
-function cancelPick(){
+async function cancelPick(){
   if(getRevealed()&&!ADMINS.includes(me)){toast('결과 공개 후에는 변경할 수 없어요');return;}
   const picks=getPicks();
   delete picks[me];
   C.picks=picks;
-  api('deletePick',{name:me});
-  sPick=null;toast('선택이 취소됐어요. 다시 선택해주세요!');renderPicking();
+  sPick=null;
+  toast('선택이 취소됐어요. 다시 선택해주세요!');
+  renderPicking();
+  await api('deletePick',{name:me});
 }
 
 // ── GIFT ──
