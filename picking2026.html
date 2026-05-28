@@ -570,7 +570,7 @@ const DEF_STICKERS={'7/8':['joy'],'7/9':['love'],'7/10':['serve'],'7/11':['thank
 const MAX=8;
 
 // STATE
-let me=null,sDate='',sPerson=null,sPick=null,editPresetIdx=null;
+let me=null,sDate='',sPerson=null,sPick=null,editPresetIdx=null,_pickChanging=false;
 let C={}; // cache
 
 // LOCAL STORAGE
@@ -695,6 +695,7 @@ function doLogin(){
 
 function doLogout(){
   me=null;C={};
+  _pickChanging=false;
   if(window._si){clearInterval(window._si);window._si=null;}
   document.getElementById('login-name').value='';
   document.getElementById('login-birth').value='';
@@ -865,8 +866,8 @@ function renderPicking(){
 
   const hero=`<div class="pick-hero"><div class="ph-icon">🌊</div><div><div class="ph-title">오늘의 Pick! 클래스</div><div class="ph-sub">2026 YKD 제주 아웃리치 · ${DLABELS[getActiveDate()]}</div></div></div>`;
 
-  // 닫혀있고 선택 안 한 경우
-  if(!pickOpen&&myPick===undefined&&!revealed&&!allVoted){
+  // 닫혀있고 선택 안 한 경우 (단, 선택 변경 중이면 선택화면 보여줘야 함)
+  if(!pickOpen&&myPick===undefined&&!revealed&&!allVoted&&!_pickChanging){
     el.innerHTML=hero+`<div class="pick-closed"><div class="pick-closed-emoji">⏳</div><div class="pick-closed-title">곧 픽킹이 시작됩니다</div><div class="pick-closed-sub">클래스D가 픽킹을 준비중이에요!<br>조금만 기다려주세요 🌊</div></div>`;
     return;
   }
@@ -905,7 +906,7 @@ function renderPicking(){
 
   // 선택 완료 상태
   if(myPick!==undefined){
-    const canChange=(!getRevealed()&&!allVoted)||isAdmin;
+    const canChange=(getPickOpen()&&!getRevealed()&&!allVoted)||isAdmin;
     el.innerHTML=hero+adminBtn+`<div class="pick-done">
       <div class="pd-emoji">✅</div>
       <div class="pd-title">${opts[myPick]?.kw} 선택 완료!</div>
@@ -959,6 +960,7 @@ async function confirmPick(){
   if(cnt>=MAX){toast('이미 마감된 그룹이에요!');renderPicking();return;}
   picks[me]=sPick;
   C.picks=picks;
+  _pickChanging=false; // 선택 완료 시 플래그 해제
   const sel=sPick;
   sPick=null;
   toast('선택 완료! ✨');
@@ -972,6 +974,7 @@ async function cancelPick(){
   delete picks[me];
   C.picks=picks;
   sPick=null;
+  _pickChanging=true; // 선택 변경 중 플래그
   toast('선택이 취소됐어요. 다시 선택해주세요!');
   renderPicking();
   await api('deletePick',{name:me});
