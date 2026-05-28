@@ -647,8 +647,8 @@ async function syncAll(){
   }finally{document.getElementById('sync-bar').style.display='none';}
 }
 
-function saveSettings(settings){
-  api('saveSettings',{settings});
+async function saveSettings(settings){
+  await api('saveSettings',{settings});
 }
 
 // AUTH
@@ -1056,19 +1056,19 @@ function updateSck(t){
   ck.className='sck'+(ck.querySelector('input').checked?' on':'');
 }
 
-function adminSaveStickers(){
+async function adminSaveStickers(){
   const types=['joy','love','thanks','serve'].filter(t=>document.querySelector(`#ck-${t} input`)?.checked);
   if(!types.length){toast('최소 1개 이상 선택하세요.');return;}
   C.todayStickers=types;
-  saveSettings({todayStickers:JSON.stringify(types)});
+  await saveSettings({todayStickers:JSON.stringify(types)});
   toast('스티커 저장 완료 ✅');
 }
 
-function adminSaveMsg(){
+async function adminSaveMsg(){
   const title=document.getElementById('daily-title').value.trim();
   const sub=document.getElementById('daily-sub').value.trim();
   C.dailyTitle=title;C.dailySub=sub;
-  saveSettings({dailyTitle:title,dailySub:sub});
+  await saveSettings({dailyTitle:title,dailySub:sub});
   renderHomeCards();toast('메시지 저장 완료 ✅');
 }
 
@@ -1079,23 +1079,35 @@ function adminClearMsg(){
   renderHomeCards();toast('메시지 삭제됨');
 }
 
-function adminOpenPick(){
-  C.pickOpen=true;saveSettings({pickOpen:'true'});renderPickStatus();toast('픽킹이 열렸어요 🟢');
+async function adminOpenPick(){
+  C.pickOpen=true;renderPickStatus();
+  await saveSettings({pickOpen:'true'});
+  toast('픽킹이 열렸어요 🟢');
 }
-function adminClosePick(){
-  C.pickOpen=false;saveSettings({pickOpen:'false'});renderPickStatus();toast('픽킹이 닫혔어요 🔴');
+async function adminClosePick(){
+  C.pickOpen=false;renderPickStatus();
+  await saveSettings({pickOpen:'false'});
+  toast('픽킹이 닫혔어요 🔴');
 }
-function adminReveal(){
-  C.revealed=true;saveSettings({revealed:'true'});toast('결과 공개 완료 ✅');
+async function adminReveal(){
+  C.revealed=true;
+  await saveSettings({revealed:'true'});
+  toast('결과 공개 완료 ✅');
 }
-function adminHideReveal(){
-  C.revealed=false;saveSettings({revealed:'false'});toast('결과 숨김 처리 완료');
+async function adminHideReveal(){
+  C.revealed=false;
+  await saveSettings({revealed:'false'});
+  toast('결과 숨김 처리 완료');
 }
-function adminOpenGift(){
-  C.giftOpen=true;saveSettings({giftOpen:'true'});renderAdmin();renderHomeCards();toast('GIFT가 열렸어요 🎁');
+async function adminOpenGift(){
+  C.giftOpen=true;
+  await saveSettings({giftOpen:'true'});
+  renderAdmin();renderHomeCards();toast('GIFT가 열렸어요 🎁');
 }
-function adminCloseGift(){
-  C.giftOpen=false;saveSettings({giftOpen:'false'});renderAdmin();renderHomeCards();toast('GIFT가 닫혔어요');
+async function adminCloseGift(){
+  C.giftOpen=false;
+  await saveSettings({giftOpen:'false'});
+  renderAdmin();renderHomeCards();toast('GIFT가 닫혔어요');
 }
 
 function setTestDate(v){
@@ -1159,24 +1171,24 @@ function deletePreset(i){
   renderPresetList();toast('프리셋 삭제됨');
 }
 
-function applyPreset(i){
+async function applyPreset(i){
   const p=getPresets()[i];
   if(!confirm(`"${p.name}" 프리셋으로 픽킹을 열까요? 이전 투표 결과가 초기화됩니다.`))return;
   C.pickOpts=p.opts;C.picks={};C.revealed=false;C.pickOpen=true;
-  saveSettings({pickOpts:JSON.stringify(p.opts),pickOpen:'true',revealed:'false'});
-  api('saveSettings',{settings:{picks:'{}'}});
+  await saveSettings({pickOpts:JSON.stringify(p.opts),pickOpen:'true',revealed:'false'});
+  api('deletePick',{name:'__all__'});
   renderPickStatus();renderPresetList();toast(`"${p.name}" 픽킹 열렸어요 🟢`);
 }
 
 // 비밀번호
-function changePw(){
+async function changePw(){
   const cur=document.getElementById('pw-cur').value;
   const nw=document.getElementById('pw-new').value;
   const cf=document.getElementById('pw-cfm').value;
   if(cur!==getAdminPw()){toast('현재 비밀번호가 틀렸어요.');return;}
   if(!nw||nw.length<4){toast('4자리 이상으로 설정해주세요.');return;}
   if(nw!==cf){toast('새 비밀번호가 일치하지 않아요.');return;}
-  C.adminPw=nw;lss('adminpw',nw);saveSettings({adminPw:nw});
+  C.adminPw=nw;lss('adminpw',nw);await saveSettings({adminPw:nw});
   document.getElementById('pw-cur').value='';document.getElementById('pw-new').value='';document.getElementById('pw-cfm').value='';
   toast('비밀번호 변경 완료 🔑');
 }
