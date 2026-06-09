@@ -128,12 +128,13 @@ nav{display:flex;align-items:center;justify-content:space-between;
   border-radius:6px;padding:.12rem .35rem;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
 
 /* PICKING */
-#s-picking nav{background:rgba(255,245,235,.95) !important;}
-#s-picking nav .nav-logo{color:#c25a00;}
-#s-picking nav .nav-logo span{color:var(--orange);}
-#s-picking nav .btn-back{color:#c25a00;}
-#s-picking{background:#fff8f2;}
-.pick-hero{background:linear-gradient(135deg,var(--orange),#ffaa5e);
+:root{--pick:#1a6b9a;--pick-dark:#0d4f75;--pick-light:#e8f4fb;}
+#s-picking nav{background:rgba(232,244,251,.95) !important;}
+#s-picking nav .nav-logo{color:var(--pick-dark);}
+#s-picking nav .nav-logo span{color:var(--pick);}
+#s-picking nav .btn-back{color:var(--pick-dark);}
+#s-picking{background:#eef6fb;}
+.pick-hero{background:linear-gradient(135deg,var(--pick),var(--pick-dark));
   border-radius:16px;padding:1.1rem 1.25rem;margin-bottom:1.2rem;
   display:flex;align-items:center;gap:.8rem;}
 .ph-icon{font-size:2.1rem;}
@@ -148,20 +149,20 @@ nav{display:flex;align-items:center;justify-content:space-between;
   border-radius:var(--radius);padding:1.15rem;cursor:pointer;
   transition:all .18s;box-shadow:var(--shadow);}
 .pck-card:active{transform:scale(.98);}
-.pck-card.sel{border-color:var(--orange);background:rgba(255,123,53,.05);}
-.pck-card.mine{border-color:var(--orange);}
+.pck-card.sel{border-color:var(--pick);background:rgba(26,107,154,.05);}
+.pck-card.mine{border-color:var(--pick);background:rgba(26,107,154,.04);}
 .pck-card.full{opacity:.4;pointer-events:none;}
-.pck-kw{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:.05em;color:var(--orange);margin-bottom:.2rem;}
+.pck-kw{font-size:1.35rem;font-weight:700;color:var(--pick-dark);margin-bottom:.2rem;line-height:1.3;}
 .pck-desc{font-size:.78rem;color:var(--muted);margin-bottom:.65rem;line-height:1.5;}
-.mine-badge{font-size:.7rem;color:var(--orange);font-weight:700;margin-bottom:.35rem;}
+.mine-badge{font-size:.7rem;color:var(--pick);font-weight:700;margin-bottom:.35rem;}
 .slots{display:flex;gap:3px;}
 .slot{width:16px;height:4px;border-radius:2px;background:var(--surface2);border:1px solid var(--border);}
-.slot.on{background:var(--orange);border-color:var(--orange);}
+.slot.on{background:var(--pick);border-color:var(--pick);}
 .btn-confirm{width:100%;padding:.9rem;
-  background:linear-gradient(135deg,var(--orange),#e05e1a);
+  background:linear-gradient(135deg,var(--pick),var(--pick-dark));
   color:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:.95rem;
   border:none;border-radius:var(--radius);cursor:pointer;
-  box-shadow:0 4px 14px rgba(255,123,53,.32);transition:opacity .15s;}
+  box-shadow:0 4px 14px rgba(26,107,154,.32);transition:opacity .15s;}
 .btn-confirm:disabled{opacity:.35;pointer-events:none;}
 .btn-confirm:active{opacity:.85;}
 .pick-done{text-align:center;padding:2rem 1rem;}
@@ -174,16 +175,22 @@ nav{display:flex;align-items:center;justify-content:space-between;
   font-size:.83rem;color:var(--muted);cursor:pointer;}
 .result-box{background:var(--surface);border:1.5px solid var(--border);
   border-radius:var(--radius);padding:1.2rem;box-shadow:var(--shadow);}
-.r-title{font-size:.83rem;font-weight:700;color:var(--orange);margin-bottom:1rem;}
+.r-title{font-size:.83rem;font-weight:700;color:var(--pick-dark);margin-bottom:1rem;}
 .r-group{margin-bottom:.9rem;}
-.r-kw{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--orange);margin-bottom:.4rem;}
+.r-kw{font-size:1.1rem;font-weight:700;color:var(--pick-dark);margin-bottom:.4rem;}
 .r-names{display:flex;flex-wrap:wrap;gap:.35rem;}
-.r-tag{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:.2rem .65rem;font-size:.76rem;}
-.r-tag.me{border-color:var(--orange);color:var(--orange);font-weight:700;}
+.r-tag{background:var(--pick-light);border:1px solid rgba(26,107,154,.2);border-radius:20px;padding:.2rem .65rem;font-size:.76rem;}
+.r-tag.me{border-color:var(--pick);color:var(--pick);font-weight:700;}
 .admin-rt-btn{padding:.45rem .9rem;
-  background:rgba(255,123,53,.1);border:1.5px solid rgba(255,123,53,.28);
+  background:rgba(26,107,154,.1);border:1.5px solid rgba(26,107,154,.28);
   border-radius:10px;font-family:'Noto Sans KR',sans-serif;
-  font-size:.76rem;color:var(--orange);cursor:pointer;font-weight:700;margin-bottom:1rem;}
+  font-size:.76rem;color:var(--pick);cursor:pointer;font-weight:700;margin-bottom:.75rem;}
+.btn-reveal{width:100%;padding:.82rem;margin-top:.75rem;
+  background:linear-gradient(135deg,var(--green),#006b52);
+  color:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:.9rem;
+  border:none;border-radius:var(--radius);cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,147,107,.28);transition:opacity .15s;}
+.btn-reveal:active{opacity:.85;}
 
 /* GIFT */
 #s-gift nav{background:rgba(255,250,230,.95) !important;}
@@ -788,9 +795,8 @@ function renderPicking(){
 
   const hero=`<div class="pick-hero"><div class="ph-icon">🌊</div><div><div class="ph-title">오늘의 Pick! 클래스</div><div class="ph-sub">2026 YKD 제주 아웃리치 · ${DL[getToday()]}</div></div></div>`;
 
-  // 결과 공개 상태
-  const showResult=(S.revealed||allVoted)&&myPick!==undefined;
-  if(showResult){
+  // ① 결과 공개 상태 → 결과 화면
+  if(S.revealed){
     const groups=Array(opts.length).fill(null).map(()=>[]);
     Object.entries(picks).forEach(([n,i])=>{if(groups[i])groups[i].push(n);});
     el.innerHTML=hero+`
@@ -798,40 +804,45 @@ function renderPicking(){
       <div class="result-box">
         <div class="r-title">오늘의 동행자</div>
         ${opts.map((o,i)=>`<div class="r-group">
-          <div class="r-kw">${o.kw} <span style="font-size:.77rem;font-weight:400;color:var(--muted)">(${groups[i]?.length||0}명)</span></div>
+          <div class="r-kw">${o.kw} <span style="font-size:.77rem;font-weight:400;color:var(--muted)">(${(groups[i]||[]).length}명)</span></div>
           <div class="r-names">${(groups[i]||[]).length?(groups[i]).map(n=>`<div class="r-tag${n===ME?' me':''}">${n}</div>`).join(''):'<span style="font-size:.75rem;color:var(--muted)">아직 없음</span>'}</div>
         </div>`).join('')}
-      </div>
-      ${isAdmin?`<div style="font-size:.78rem;color:var(--muted);margin-top:.85rem;">⚙️ 현재 ${total}/${MEMBERS.length}명 선택 완료</div>`:''}`;
+      </div>`;
     return;
   }
 
-  // 픽킹 닫힘 (선택 변경 중이 아닐 때)
-  if(!S.pickOpen&&myPick===undefined&&!changing){
+  // ② 픽킹 닫힘 → 무조건 준비중 화면
+  if(!S.pickOpen){
     el.innerHTML=hero+`<div class="pick-closed"><div class="pc-emj">⏳</div><div class="pc-title">곧 픽킹이 시작됩니다</div><div class="pc-sub">클래스D가 픽킹을 준비중이에요!<br>조금만 기다려주세요 🌊</div></div>`;
     return;
   }
 
-  // 관리자 실시간 현황 버튼
-  const adminBtn=isAdmin?`
+  // ③ 픽킹 열림 — 관리자 실시간 현황 + 결과공개 버튼
+  const gc=[0,0,0];
+  Object.entries(picks).forEach(([n,i])=>{if(n!==ME&&gc[i]!==undefined)gc[i]++;});
+
+  const adminPanel=isAdmin?`
     <button class="admin-rt-btn" onclick="toggleRT()" id="btn-rt">⚙️ 실시간 현황 보기</button>
     <div id="rt-panel" style="display:none;margin-bottom:1rem;">
       <div class="result-box">
         <div class="r-title">실시간 현황 (${total}/${MEMBERS.length}명)</div>
-        ${opts.map((o,i)=>{const g=Object.entries(picks).filter(([,idx])=>idx===i).map(([n])=>n);
-          return `<div class="r-group"><div class="r-kw">${o.kw} (${g.length}명)</div>
-            <div class="r-names">${g.length?g.map(n=>`<div class="r-tag${n===ME?' me':''}">${n}</div>`).join(''):'<span style="font-size:.75rem;color:var(--muted)">아직 없음</span>'}</div></div>`;}).join('')}
+        ${opts.map((o,i)=>{
+          const g=Object.entries(picks).filter(([,idx])=>idx===i).map(([n])=>n);
+          return `<div class="r-group">
+            <div class="r-kw">${o.kw} (${g.length}명)</div>
+            <div class="r-names">${g.length?g.map(n=>`<div class="r-tag${n===ME?' me':''}">${n}</div>`).join(''):'<span style="font-size:.75rem;color:var(--muted)">아직 없음</span>'}</div>
+          </div>`;}).join('')}
+        <button class="btn-reveal" onclick="aRevealFromPick()">📢 지금 결과 공개하기</button>
       </div>
     </div>`:'';
 
-  // 선택 완료 후 대기
+  // ④ 픽킹 열림 + 선택 완료
   if(myPick!==undefined){
-    const canChange=S.pickOpen&&!S.revealed&&!allVoted;
-    el.innerHTML=hero+adminBtn+`<div class="pick-done">
+    el.innerHTML=hero+adminPanel+`<div class="pick-done">
       <div class="pd-emj">✅</div>
       <div class="pd-title">${opts[myPick]?.kw||'?'} 선택 완료!</div>
-      <div class="pd-sub">다른 참가자들의 선택이 완료되면<br>오늘의 동행자가 공개됩니다.<br><br>현재 <strong>${total}/${MEMBERS.length}명</strong> 선택 완료</div>
-      ${canChange?`<button class="btn-change" onclick="cancelPick()">선택 변경하기</button>`:''}
+      <div class="pd-sub">픽킹이 마감되면<br>오늘의 동행자가 공개됩니다.<br><br>현재 <strong>${total}/${MEMBERS.length}명</strong> 선택 완료</div>
+      <button class="btn-change" onclick="cancelPick()">선택 변경하기</button>
     </div>`;
     if(isAdmin)setTimeout(()=>{
       const p=document.getElementById('rt-panel');
@@ -842,10 +853,8 @@ function renderPicking(){
     return;
   }
 
-  // 선택 화면
-  const gc=[0,0,0];
-  Object.entries(picks).forEach(([n,i])=>{if(n!==ME&&gc[i]!==undefined)gc[i]++;});
-  el.innerHTML=hero+adminBtn+`
+  // ⑤ 픽킹 열림 + 선택 안 함
+  el.innerHTML=hero+adminPanel+`
     <div class="pcards">
       ${opts.map((o,i)=>{
         const cnt=gc[i]||0;const full=cnt>=MAX;
@@ -857,6 +866,13 @@ function renderPicking(){
         </div>`;}).join('')}
     </div>
     <button class="btn-confirm" id="btn-confirm" disabled onclick="confirmPick()">선택 완료 →</button>`;
+}
+
+async function aRevealFromPick(){
+  if(!confirm('지금 결과를 공개할까요?'))return;
+  await saveSetting('revealed','true');
+  toast('결과 공개 완료 ✅');
+  renderPicking();
 }
 
 function toggleRT(){
